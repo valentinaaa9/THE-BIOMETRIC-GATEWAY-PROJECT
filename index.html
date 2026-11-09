@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Biometric Gateway - Terminal 07</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-color: #030712;
+      --panel-bg: rgba(15, 23, 42, 0.95);
+      --panel-border: #1e293b;
+      --cyan-neon: #00f3ff;
+      --cyan-glow: rgba(0, 243, 255, 0.35);
+      --red-alert: #ff0055;
+      --red-glow: rgba(255, 0, 85, 0.4);
+      --green-access: #00ff66;
+      --green-glow: rgba(0, 255, 102, 0.35);
+      --yellow-warn: #ffcc00;
+      --amber-glow: rgba(245, 158, 11, 0.35);
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-title: 'Orbitron', sans-serif;
+      --font-body: 'Rajdhani', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: #e2e8f0;
+      font-family: var(--font-body);
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.85) 0%, rgba(3, 7, 18, 0.98) 100%),
+        linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 25px 25px, 25px 25px;
+    }
+
+    /* CRT scanline screen effect */
+    .crt-overlay::before {
+      content: " ";
+      display: block;
+      position: fixed;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      z-index: 99;
+      pointer-events: none;
+      opacity: 0.4;
+    }
+
+    .font-title { font-family: var(--font-title); }
+    .font-mono { font-family: var(--font-mono); }
+
+    .glow-cyan { text-shadow: 0 0 10px var(--cyan-glow); }
+    .glow-box-cyan { box-shadow: 0 0 15px var(--cyan-glow); }
+    .glow-box-red { box-shadow: 0 0 15px var(--red-glow); }
+    .glow-box-green { box-shadow: 0 0 15px var(--green-glow); }
+    .glow-box-amber { box-shadow: 0 0 15px var(--amber-glow); }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #030712; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--cyan-neon); }
+  </style>
+</head>
+<body class="crt-overlay flex flex-col min-h-screen">
+
+  <header class="bg-slate-950/90 border-b-2 border-[var(--cyan-neon)] px-4 md:px-6 py-3 flex flex-wrap justify-between items-center gap-4 glow-box-cyan z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-3 h-3 rounded-full bg-[var(--cyan-neon)] animate-pulse"></div>
+      <h1 class="font-title text-lg md:text-xl font-bold tracking-wider text-white">THE BIOMETRIC GATEWAY</h1>
+      <span class="bg-[var(--cyan-neon)] text-black text-[10px] font-mono font-bold px-2 py-0.5 rounded">GRADO 8° / ESL A2</span>
+    </div>
+    
+    <div class="flex items-center gap-4 md:gap-6 text-xs md:text-sm font-mono text-slate-400">
+      <div>OPERADOR: <span class="text-[var(--cyan-neon)] font-bold">AGENTE-804</span></div>
+      <div>ESTADO: <span id="sys-status" class="text-[var(--green-access)] font-bold">CONECTADO</span></div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl w-full mx-auto p-3 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+    
+    <!-- Sidebar / Navigation and Metrics -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+      
+      <!-- Simulation Milestones -->
+      <div class="bg-[var(--panel-bg)] border border-[var(--panel-border)] rounded-lg p-4 shadow-lg">
+        <h2 class="font-title text-xs md:text-sm text-[var(--cyan-neon)] uppercase tracking-wider mb-3 pb-2 border-b border-slate-800 flex justify-between items-center">
+          <span>Pasos de la Misión</span>
+          <span class="text-xs text-slate-500 font-mono">6 ETAPAS</span>
+        </h2>
+        <nav class="flex flex-col gap-2 font-mono text-xs md:text-sm" id="nav-milestones">
+          <button onclick="switchStep(0)" id="step-btn-0" class="w-full text-left p-2.5 rounded border border-slate-800 bg-slate-900/50 hover:border-[var(--cyan-neon)] transition flex justify-between items-center">
+            <span>01. Reglas e Instrucciones</span>
+            <span class="status-icon">▶</span>
+          </button>
+          <button onclick="switchStep(1)" id="step-btn-1" class="w-full text-left p-2.5 rounded border border-slate-800 bg-slate-900/50 hover:border-[var(--cyan-neon)] transition flex justify-between items-center">
+            <span>02. Reto Físico 1: Papel ID</span>
+            <span class="status-icon">🔒</span>
+          </button>
+          <button onclick="switchStep(2)" id="step-btn-2" class="w-full text-left p-2.5 rounded border border-slate-800 bg-slate-900/50 hover:border-[var(--cyan-neon)] transition flex justify-between items-center">
+            <span>03. Audio Interceptado</span>
+            <span class="status-icon">🔒</span>
+          </button>
+          <button onclick="switchStep(3)" id="step-btn-3" class="w-full text-left p-2.5 rounded border border-slate-800 bg-slate-900/50 hover:border-[var(--cyan-neon)] transition flex justify-between items-center">
+            <span>04. Red Clandestina (Foro)</span>
+            <span class="status-icon">🔒</span>
+          </button>
+          <button onclick="switchStep(4)" id="step-btn-4" class="w-full text-left p-2.5 rounded border border-slate-800 bg-slate-900/50 hover:border-[var(--cyan-neon)] transition flex justify-between items-center">
+            <span>05. Decisión Final</span>
+            <span class="status-icon">🔒</span>
+          </button>
+          <button onclick="switchStep(5)" id="step-btn-5" class="w-full text-left p-2.5 rounded border border-slate-800 bg-slate-900/50 hover:border-[var(--cyan-neon)] transition flex justify-between items-center">
+            <span>06. Juego Terminal OMNICORP</span>
+            <span class="status-icon">🔒</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- System Metrics -->
+      <div class="bg-[var(--panel-bg)] border border-[var(--panel-border)] rounded-lg p-4 shadow-lg">
+        <h2 class="font-title text-xs md:text-sm text-[var(--cyan-neon)] uppercase tracking-wider mb-3 pb-2 border-b border-slate-800">
+          Métricas de Desempeño
+        </h2>
+        <ul class="font-mono text-xs flex flex-col gap-2.5 text-slate-300">
+          <li class="flex justify-between items-center pb-1.5 border-b border-slate-800/50">
+            <span>Confianza Corporativa:</span>
+            <span id="metric-trust" class="text-[var(--cyan-neon)] font-bold text-sm">100%</span>
+          </li>
+          <li class="flex justify-between items-center pb-1.5 border-b border-slate-800/50">
+            <span>Señal Rebelde:</span>
+            <span id="metric-rebel" class="text-amber-400 font-bold text-sm">0%</span>
+          </li>
+          <li class="flex justify-between items-center pb-1.5 border-b border-slate-800/50">
+            <span>Retos Físicos Completados:</span>
+            <span id="metric-paper" class="text-emerald-400 font-bold">0 / 2</span>
+          </li>
+          <li class="flex justify-between items-center">
+            <span>Tema Gramatical:</span>
+            <span class="text-slate-400 font-bold">Imperativos / First Conditional</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Spanish Grammar Help Box -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-4 text-xs font-mono text-slate-400 space-y-2">
+        <h3 class="text-amber-400 font-bold uppercase tracking-wide flex items-center gap-1.5">
+          <span>💡 Guía Rápida de Gramática</span>
+        </h3>
+        <div>
+          <strong class="text-white">1. Imperativos (Imperatives):</strong>
+          <p class="text-slate-300">Órdenes o instrucciones directas en inglés. Inician con el verbo en presente.</p>
+          <p class="text-emerald-400 italic">Ejemplo: "Scan the card!", "Do not open the door!"</p>
+        </div>
+        <div>
+          <strong class="text-white">2. Primer Condicional (First Conditional):</strong>
+          <p class="text-slate-300">Reglas o consecuencias futuras.</p>
+          <p class="text-emerald-400 italic">Estructura: If + presente, WILL + verbo</p>
+          <p class="text-slate-400 italic">Ejemplo: "If you fail the test, AURA will lock the gate."</p>
+        </div>
+      </div>
+
+    </aside>
+
+    <main class="lg:col-span-8 flex flex-col">
+      <section id="terminal-screen" class="bg-[var(--panel-bg)] border border-[var(--panel-border)] rounded-lg p-5 md:p-6 shadow-2xl flex-1 flex flex-col relative overflow-hidden">
+        <!-- Dynamic content injected here -->
+      </section>
+    </main>
+
+  </div>
+
+  <footer class="mt-auto py-3 border-t border-slate-800 text-center text-xs font-mono text-slate-500">
+    The Biometric Gateway | Experiencia Transmedia de Inglés A2 para 8° Grado
+  </footer>
+
+  <script>
+    // State store
+    let gameState = {
+      currentStep: 0,
+      trustLevel: 100,
+      rebelSignal: 0,
+      paperChallengesCompleted: 0,
+      unlockedSteps: [0], // Step 0 unlocked by default
+      citizenChoice: null,
+      forumPosts: [
+        { author: "Cipher (Líder Rebelde)", text: "Welcome to The Glitch! Use imperatives to warn new members." },
+        { author: "Agente_007", text: "Warning! If you scan a fake pass, AURA will block your account." }
+      ]
+    };
+
+    function updateMetrics() {
+      document.getElementById('metric-trust').innerText = `${gameState.trustLevel}%`;
+      document.getElementById('metric-rebel').innerText = `${gameState.rebelSignal}%`;
+      document.getElementById('metric-paper').innerText = `${gameState.paperChallengesCompleted} / 2`;
+      
+      if (gameState.trustLevel < 50) {
+        document.getElementById('metric-trust').className = "text-red-500 font-bold text-sm";
+      } else {
+        document.getElementById('metric-trust').className = "text-[var(--cyan-neon)] font-bold text-sm";
+      }
+    }
+
+    function switchStep(stepIndex) {
+      if (!gameState.unlockedSteps.includes(stepIndex)) {
+        alert("⚠️ Esta etapa está bloqueada. Debes completar la actividad anterior o ingresar el código en papel correcto.");
+        return;
+      }
+      gameState.currentStep = stepIndex;
+      renderScreen(stepIndex);
+      updateNavButtons(stepIndex);
+    }
+
+    function unlockStep(stepIndex) {
+      if (!gameState.unlockedSteps.includes(stepIndex)) {
+        gameState.unlockedSteps.push(stepIndex);
+      }
+      updateNavButtons(gameState.currentStep);
+    }
+
+    function updateNavButtons(activeStep) {
+      for (let i = 0; i < 6; i++) {
+        const btn = document.getElementById(`step-btn-${i}`);
+        if (!btn) continue;
+        const icon = btn.querySelector('.status-icon');
+        
+        if (i === activeStep) {
+          btn.className = "w-full text-left p-2.5 rounded border border-[var(--cyan-neon)] bg-cyan-950/40 text-[var(--cyan-neon)] font-bold transition flex justify-between items-center glow-box-cyan";
+          icon.innerText = "▶";
+        } else if (gameState.unlockedSteps.includes(i)) {
+          btn.className = "w-full text-left p-2.5 rounded border border-emerald-800/60 bg-emerald-950/20 text-emerald-400 transition flex justify-between items-center hover:bg-emerald-900/30";
+          icon.innerText = "✓";
+        } else {
+          btn.className = "w-full text-left p-2.5 rounded border border-slate-800 bg-slate-900/50 text-slate-600 cursor-not-allowed flex justify-between items-center";
+          icon.innerText = "🔒";
+        }
+      }
+    }
+
+    function renderScreen(step) {
+      const screen = document.getElementById('terminal-screen');
+      
+      switch(step) {
+        case 0:
+          screen.innerHTML = `
+            <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-800">
+              <span class="w-3 h-8 bg-[var(--cyan-neon)]"></span>
+              <h2 class="font-title text-lg md:text-xl text-white font-bold">01. ORIENTACIÓN Y REGLAS DEL SISTEMA</h2>
+            </div>
+
+            <div class="text-slate-300 text-sm leading-relaxed space-y-4 mb-6">
+              <div class="bg-cyan-950/30 border-l-4 border-[var(--cyan-neon)] p-4 rounded text-xs md:text-sm font-mono space-y-2">
+                <p class="text-[var(--cyan-neon)] font-bold">📌 Instrucciones para el Operador (en Español):</p>
+                <p>Bienvenido, Operador. Estás a cargo de la <strong>Terminal Biométrica 07</strong>. Tu deber es verificar las credenciales de los ciudadanos usando reglas gramaticales en inglés.</p>
+                <ul class="list-disc list-inside text-slate-300 pl-2 space-y-1">
+                  <li>Usa los imperativos en inglés para dar órdenes. (<em class="text-amber-300">Ejemplo: "Scan the card", "Do not allow entry"</em>)</li>
+                  <li>Aplica el primer condicional para evaluar reglas. (<em class="text-amber-300">Ejemplo: "If the ID is fake, deny entry."</em>)</li>
+                  <li><strong>Nota Importante:</strong> Tendrás actividades físicas en papel que te darán códigos secretos para desbloquear la terminal.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg mb-6">
+              <div class="text-xs font-mono text-amber-400 mb-1">PRUEBA DE INICIALIZACIÓN (Tutorial)</div>
+              <label class="block font-mono text-xs md:text-sm text-slate-200 mb-2">
+                Escribe un verbo en imperativo en inglés para completar el comando del sistema:
+              </label>
+              <p class="font-mono text-sm text-slate-400 mb-3">"________ the door if the biometric scan fails!"</p>
+              <div class="flex flex-wrap md:flex-nowrap gap-2">
+                <input type="text" id="input-tutorial" placeholder="Escribe un verbo (ej: Lock, Close, Stop, Block)..." class="flex-1 bg-black border border-slate-700 rounded px-3 py-2 font-mono text-sm text-[var(--cyan-neon)] focus:outline-none focus:border-[var(--cyan-neon)]">
+                <button onclick="checkTutorial()" class="bg-[var(--cyan-neon)] text-black font-title font-bold px-4 py-2 rounded hover:bg-cyan-300 transition text-xs uppercase tracking-wider">PROBAR COMANDO</button>
+              </div>
+              <div id="feedback-tutorial" class="hidden mt-3 p-2.5 rounded font-mono text-xs"></div>
+            </div>
+
+            <div class="mt-auto pt-4 flex justify-end">
+              <button onclick="finishTutorial()" class="bg-emerald-500 hover:bg-emerald-400 text-black font-title font-bold px-6 py-3 rounded transition flex items-center gap-2 text-xs md:text-sm">
+                <span>INICIAR TURNO Y DESBLOQUEAR RETO FÍSICO 1</span>
+                <span>▶</span>
+              </button>
+            </div>
+          `;
+          break;
+
+        case 1:
+          screen.innerHTML = `
+            <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-800">
+              <span class="w-3 h-8 bg-amber-400"></span>
+              <h2 class="font-title text-lg md:text-xl text-white font-bold">02. RETO FÍSICO 1: INSPECCIÓN DE PASE EN PAPEL</h2>
+            </div>
+
+            <div class="bg-amber-950/30 border-l-4 border-amber-400 p-4 rounded mb-4 text-xs md:text-sm text-slate-300 space-y-2">
+              <p class="text-amber-400 font-bold uppercase tracking-wider">📄 INSTRUCCIÓN PARA TRABAJO EN CUADERNO / HOJA:</p>
+              <ol class="list-decimal list-inside space-y-1.5 font-mono">
+                <li>Abre tu cuaderno o toma una hoja de papel.</li>
+                <li>Dibuja un <strong>Pase Biométrico de Emergencia (Emergency Pass)</strong> para la ciudadana <strong>Elena Rostova</strong>.</li>
+                <li>Escribe en inglés dentro de la tarjeta de papel las siguientes 2 oraciones eligiendo la opción correcta en cada paréntesis:
+                  <div class="bg-black/60 p-2.5 rounded text-amber-200 my-2 text-xs">
+                    • <strong>Sentence 1 (Imperative):</strong> "<span class="text-emerald-400">________ (Scan / Hide)</span> your biometric card quickly!"<br>
+                    • <strong>Sentence 2 (First Conditional):</strong> "If Elena enters the city, she <span class="text-emerald-400">________ (will find / finded)</span> her family."
+                  </div>
+                </li>
+                <li>Une la primera letra de la primera palabra correcta con la primera letra de la segunda palabra correcta que elegiste. Ese será tu <strong>CÓDIGO DE ACCESO EN PAPEL</strong> (Código de 2 letras).</li>
+              </ol>
+            </div>
+
+            <!-- Paper Code Verification Box -->
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg mb-4">
+              <label class="block font-mono text-xs text-[var(--cyan-neon)] mb-2">
+                🔑 INGRESA EL CÓDIGO DE TU HOJA DE PAPEL PARA ACTIVAR EL ESCÁNER:
+              </label>
+              <div class="flex gap-2">
+                <input type="text" id="input-paper-code-1" placeholder="Ingresa las 2 letras clave..." uppercase class="flex-1 bg-black border border-slate-700 rounded px-3 py-2 font-mono text-sm text-[var(--cyan-neon)] focus:outline-none focus:border-[var(--cyan-neon)] uppercase">
+                <button onclick="checkPaperCode1()" class="bg-amber-400 text-black font-title font-bold px-4 py-2 rounded hover:bg-amber-300 transition text-xs">VERIFICAR CÓDIGO</button>
+              </div>
+              <div id="feedback-paper-1" class="hidden mt-3 p-2.5 rounded font-mono text-xs"></div>
+            </div>
+
+            <!-- Citizen Inspection choices (Hidden until paper code is solved) -->
+            <div id="citizen-decision-box" class="${gameState.paperChallengesCompleted >= 1 ? 'block' : 'opacity-40 pointer-events-none'} transition-all">
+              <p class="font-mono text-xs text-slate-300 mb-3">
+                <span class="text-emerald-400 font-bold">✓ CÓDIGO FÍSICO ACEPTADO.</span> Ahora decide qué hacer con la ciudadana Elena Rostova en la terminal:
+              </p>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <button onclick="makeChoice('approve')" class="p-3 bg-emerald-950/40 border border-emerald-500 text-emerald-400 font-title text-xs font-bold rounded hover:bg-emerald-500 hover:text-black transition flex flex-col items-center gap-1">
+                  <span>APPROVE ACCESS</span>
+                  <span class="text-[10px] opacity-80 font-mono text-slate-300">(Ayudar / +Señal Rebelde)</span>
+                </button>
+
+                <button onclick="makeChoice('deny')" class="p-3 bg-red-950/40 border border-red-500 text-red-400 font-title text-xs font-bold rounded hover:bg-red-500 hover:text-white transition flex flex-col items-center gap-1">
+                  <span>DENY ACCESS</span>
+                  <span class="text-[10px] opacity-80 font-mono text-slate-300">(Cumplir Regla / +Confianza)</span>
+                </button>
+
+                <button onclick="makeChoice('scan')" class="p-3 bg-cyan-950/40 border border-[var(--cyan-neon)] text-[var(--cyan-neon)] font-title text-xs font-bold rounded hover:bg-[var(--cyan-neon)] hover:text-black transition flex flex-col items-center gap-1">
+                  <span>DEEP SCAN</span>
+                  <span class="text-[10px] opacity-80 font-mono text-slate-300">(Escaneo Profundo / Intercept)</span>
+                </button>
+              </div>
+            </div>
+          `;
+          break;
+
+        case 2:
+          screen.innerHTML = `
+            <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-800">
+              <span class="w-3 h-8 bg-amber-400"></span>
+              <h2 class="font-title text-lg md:text-xl text-white font-bold">03. NODO SONORO: TRANSMISIÓN INTERCEPTADA</h2>
+            </div>
+
+            <p class="text-slate-300 text-xs md:text-sm mb-3">
+              Tu terminal interceptó una señal de audio cifrada en inglés sencillo emitida por <strong>Cipher</strong>, líder de la resistencia.
+            </p>
+
+            <!-- Audio Simulation Display -->
+            <div class="bg-slate-950 border border-amber-500/50 rounded-lg p-4 mb-4 font-mono">
+              <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <span class="text-xs text-amber-400 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                  RADIO Clandestina - Transmisión en Inglés
+                </span>
+                <button onclick="playAudioSimulation()" id="play-btn" class="bg-amber-400 hover:bg-amber-300 text-black font-title font-bold px-3 py-1.5 rounded text-xs flex items-center gap-1">
+                  <span>🔊 REPRODUCIR MENSAJE EN VOZ</span>
+                </button>
+              </div>
+
+              <!-- Audio Transcript -->
+              <div id="transcript-box" class="bg-black/80 border-l-2 border-amber-400 p-3 rounded text-xs text-amber-200/90 leading-relaxed font-mono space-y-1">
+                <p class="text-slate-400 text-[10px] uppercase">// Transcripción del audio:</p>
+                <p>"Agent 804, listen carefully!</p>
+                <p>If you help the rebels, OmniCorp will watch you.</p>
+                <p><strong class="text-white">Find</strong> the secret key! <strong class="text-white">Hack</strong> the firewall! <strong class="text-white">Protect</strong> citizen 104!"</p>
+              </div>
+            </div>
+
+            <!-- RETO FÍSICO 2: DECODIFICACIÓN EN PAPEL -->
+            <div class="bg-amber-950/30 border-l-4 border-amber-400 p-4 rounded mb-4 text-xs text-slate-300 space-y-2">
+              <p class="text-amber-400 font-bold uppercase tracking-wider">📄 RETO FÍSICO 2 EN PAPEL (Escucha y Decodifica):</p>
+              <ol class="list-decimal list-inside space-y-1 font-mono">
+                <li>En tu cuaderno, escribe los <strong>3 verbos en imperativo</strong> en inglés que escuchaste o leíste en la transmisión de Cipher.</li>
+                <li>Escribe al lado de cada verbo su significado en español.</li>
+                <li>El código secreto de desbloqueo es el <strong>número total de letras</strong> que tiene la <strong>tercera palabra imperativa</strong> que aparece en el texto. ¡Cuéntalas con atención!</li>
+              </ol>
+            </div>
+
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg mb-4">
+              <label class="block font-mono text-xs text-[var(--cyan-neon)] mb-2">
+                🔑 INGRESA EL NÚMERO DE LETRAS DE LA TERCERA PALABRA IMPERATIVA PARA CONECTAR AL FORO:
+              </label>
+              <div class="flex gap-2">
+                <input type="number" id="input-audio-code" placeholder="Escribe la cantidad de letras..." class="flex-1 bg-black border border-slate-700 rounded px-3 py-2 font-mono text-xs text-[var(--cyan-neon)] focus:outline-none focus:border-[var(--cyan-neon)]">
+                <button onclick="checkAudioCode()" class="bg-[var(--cyan-neon)] text-black font-title font-bold px-4 py-2 rounded hover:bg-cyan-300 transition text-xs">DESBLOQUEAR FORO</button>
+              </div>
+              <div id="feedback-audio" class="hidden mt-3 p-2.5 rounded font-mono text-xs"></div>
+            </div>
+
+            <div class="mt-auto pt-2 flex justify-end">
+              <button id="btn-to-forum" onclick="switchStep(3)" class="${gameState.unlockedSteps.includes(3) ? 'flex' : 'hidden'} bg-emerald-500 hover:bg-emerald-400 text-black font-title font-bold px-6 py-3 rounded transition items-center gap-2 text-xs">
+                <span>IR AL FORO CLANDESTINO (NODO SOCIAL)</span>
+                <span>▶</span>
+              </button>
+            </div>
+          `;
+          break;
+
+        case 3:
+          screen.innerHTML = `
+            <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-800">
+              <span class="w-3 h-8 bg-emerald-400"></span>
+              <h2 class="font-title text-lg md:text-xl text-white font-bold">04. RED CLANDESTINA: THE GLITCH FORUM</h2>
+            </div>
+
+            <p class="text-slate-300 text-xs md:text-sm mb-3">
+              Estás conectado a la red secreta de la resistencia. Escribe un reporte de turno (Shift Report) en inglés para advertir a otros operadores.
+            </p>
+
+            <!-- Forum Feed -->
+            <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 max-h-40 overflow-y-auto font-mono text-xs space-y-2 mb-4" id="forum-posts-container">
+              ${gameState.forumPosts.map(p => `
+                <div class="bg-slate-900 border border-slate-800/80 p-2 rounded">
+                  <div class="text-[var(--cyan-neon)] font-bold mb-0.5">${p.author}:</div>
+                  <div class="text-slate-300">${p.text}</div>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Forum Writing Box -->
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-lg mb-4">
+              <div class="text-amber-400 font-bold text-xs font-mono mb-1">✍️ RETO DE ESCRITURA EN INGLÉS (Writing):</div>
+              <p class="text-slate-300 text-xs mb-2">
+                Escribe una oración en inglés usando <strong>Imperativos</strong> o <strong>First Conditional</strong>.<br>
+                <span class="text-slate-400 italic">Ejemplos: "If AURA detects you, run!" o "Lock the terminal now!"</span>
+              </p>
+              <textarea id="forum-input-text" rows="2" placeholder="Escribe tu mensaje en inglés aquí..." class="w-full bg-black border border-slate-700 rounded p-2.5 font-mono text-xs text-[var(--cyan-neon)] focus:outline-none focus:border-[var(--cyan-neon)] mb-2"></textarea>
+              <button onclick="submitForumPost()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-title font-bold py-2 rounded transition text-xs uppercase tracking-wider">
+                PUBLICAR EN LA RED REBELDE
+              </button>
+              <div id="forum-feedback" class="hidden mt-2 p-2 rounded font-mono text-xs"></div>
+            </div>
+
+            <div class="mt-auto pt-2 flex justify-between items-center">
+              <span class="font-mono text-xs text-emerald-400">✓ Red Rebelde Activa</span>
+              <button onclick="goToFinalChoice()" class="bg-[var(--cyan-neon)] text-black font-title font-bold px-6 py-2.5 rounded hover:bg-cyan-300 transition text-xs">
+                IR A LA DECISIÓN FINAL ▶
+              </button>
+            </div>
+          `;
+          break;
+
+        case 4:
+          screen.innerHTML = `
+            <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-800">
+              <span class="w-3 h-8 bg-red-500"></span>
+              <h2 class="font-title text-lg md:text-xl text-white font-bold">05. DECISIÓN FINAL: EL DESTINO DE LA TERMINAL</h2>
+            </div>
+
+            <div class="text-slate-300 text-xs md:text-sm space-y-3 mb-4">
+              <p>Tu turno en la Terminal 07 ha terminado. El Director Vance exige un reporte de fidelidad corporativa, mientras Cipher te pide desactivar las compuertas biométricas.</p>
+            </div>
+
+            <!-- Trajectory Summary -->
+            <div class="bg-slate-950 border border-slate-800 p-4 rounded-lg font-mono text-xs space-y-2 mb-6">
+              <div class="text-[var(--cyan-neon)] font-bold">RESUMEN DE TU TRAYECTORIA:</div>
+              <div class="flex justify-between">
+                <span>Confianza Corporativa:</span>
+                <span class="font-bold text-white">${gameState.trustLevel}%</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Alineación Rebelde:</span>
+                <span class="font-bold text-amber-400">${gameState.rebelSignal}%</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Retos en Papel Completados:</span>
+                <span class="font-bold text-emerald-400">${gameState.paperChallengesCompleted} / 2</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-auto">
+              <button onclick="triggerEnding('corporate')" class="p-4 bg-red-950/40 border border-red-500 text-red-400 font-title text-xs md:text-sm font-bold rounded hover:bg-red-500 hover:text-white transition flex flex-col items-center gap-1.5 text-center">
+                <span>FINAL 1: LEALTAD CORPORATIVA</span>
+                <span class="text-[11px] font-mono font-normal text-slate-300">Reporta a los rebeldes y mantiene el sistema cerrado</span>
+              </button>
+
+              <button onclick="triggerEnding('rebel')" class="p-4 bg-emerald-950/40 border border-emerald-500 text-emerald-400 font-title text-xs md:text-sm font-bold rounded hover:bg-emerald-500 hover:text-black transition flex flex-col items-center gap-1.5 text-center">
+                <span>FINAL 2: REVOLUCIÓN Y LIBERTAD</span>
+                <span class="text-[11px] font-mono font-normal text-slate-300">Desactiva el cortafuegos y abre las puertas biométricas</span>
+              </button>
+            </div>
+          `;
+          break;
+
+        case 5:
+          screen.innerHTML = `
+            <div class="flex flex-col h-full bg-[#050505] text-[#39ff14] font-mono p-3 md:p-5 rounded-lg border border-[#39ff14]/50 shadow-[0_0_20px_rgba(57,255,20,0.2)]">
+              <!-- Header -->
+              <header class="border-b border-[#39ff14]/50 pb-3 mb-4 flex justify-between items-end flex-wrap gap-2">
+                <div>
+                  <h1 class="text-lg md:text-xl font-bold tracking-wider text-[#39ff14]">OMNICORP: TERMINAL DE SEGURIDAD</h1>
+                  <p class="text-[11px] opacity-70">Sistema A.U.R.A. v9.4 // Módulo de Acceso 10 Niveles</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs">ID Operador: <span class="font-bold text-white">#774-NUEVO</span></p>
+                  <p class="text-[10px] text-[#39ff14]/70" id="omni-clock">00:00:00 HSL</p>
+                </div>
+              </header>
+
+              <!-- Dynamic Content Area -->
+              <div id="omni-content-area" class="flex-grow flex flex-col min-h-[260px]">
+                <!-- Content will be injected here by JS -->
+              </div>
+
+              <!-- Action Controls -->
+              <div id="omni-controls-area" class="mt-4 pt-3 border-t border-[#39ff14]/30 grid gap-2.5">
+                <!-- Buttons will be injected here by JS -->
+              </div>
+            </div>
+          `;
+          startOmnicorpGame();
+          break;
+      }
+    }
+
+    function checkTutorial() {
+      const input = document.getElementById('input-tutorial').value.trim().toLowerCase();
+      const feedback = document.getElementById('feedback-tutorial');
+      const validVerbs = ["lock", "close", "stop", "block", "check", "open", "disable", "hack"];
+
+      feedback.classList.remove('hidden');
+
+      if (validVerbs.includes(input)) {
+        feedback.className = "mt-3 p-2.5 rounded font-mono text-xs bg-emerald-950/80 border border-emerald-500 text-emerald-300";
+        feedback.innerHTML = `✓ <strong>¡Comando Aceptado!</strong> "${input.toUpperCase()}" es un verbo imperativo correcto en inglés.`;
+      } else {
+        feedback.className = "mt-3 p-2.5 rounded font-mono text-xs bg-red-950/80 border border-red-500 text-red-300";
+        feedback.innerHTML = `✗ <strong>Error de Sintaxis:</strong> Ingresa un verbo imperativo directo en inglés (ejemplo: <em>Lock, Close, Stop, Block</em>).`;
+      }
+    }
+
+    function finishTutorial() {
+      unlockStep(1);
+      switchStep(1);
+    }
+
+    function checkPaperCode1() {
+      const code = document.getElementById('input-paper-code-1').value.trim().toUpperCase();
+      const feedback = document.getElementById('feedback-paper-1');
+
+      feedback.classList.remove('hidden');
+
+      if (code === "SW") {
+        feedback.className = "mt-3 p-2.5 rounded font-mono text-xs bg-emerald-950/80 border border-emerald-500 text-emerald-300";
+        feedback.innerHTML = `✓ <strong>¡CÓDIGO CORRECTO!</strong> Se verificó tu dibujo y respuestas en papel. Escáner biométrico activado.`;
+        gameState.paperChallengesCompleted = Math.max(gameState.paperChallengesCompleted, 1);
+        updateMetrics();
+        document.getElementById('citizen-decision-box').classList.remove('opacity-40', 'pointer-events-none');
+      } else {
+        feedback.className = "mt-3 p-2.5 rounded font-mono text-xs bg-red-950/80 border border-red-500 text-red-300";
+        feedback.innerHTML = `✗ <strong>Código Incorrecto:</strong> Revisa las palabras en tu cuaderno. Elige las opciones gramaticalmente correctas en inglés y toma la primera letra de cada una.`;
+      }
+    }
+
+    function makeChoice(choice) {
+      gameState.citizenChoice = choice;
+      if (choice === 'approve') {
+        gameState.trustLevel = Math.max(0, gameState.trustLevel - 20);
+        gameState.rebelSignal += 30;
+      } else if (choice === 'deny') {
+        gameState.trustLevel = Math.min(100, gameState.trustLevel + 10);
+      } else if (choice === 'scan') {
+        gameState.rebelSignal += 15;
+      }
+      updateMetrics();
+      unlockStep(2);
+      switchStep(2);
+    }
+
+    function playAudioSimulation() {
+      const btn = document.getElementById('play-btn');
+      btn.innerHTML = "🔊 REPRODUCIENDO MENSAJE...";
+      btn.className = "bg-emerald-400 text-black font-title font-bold px-3 py-1.5 rounded text-xs animate-pulse";
+      
+      // Browser Speech Synthesis for English A2 Audio
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance("Agent 804, listen carefully! If you help the rebels, OmniCorp will watch you. Find the secret key! Hack the firewall! Protect citizen 104!");
+        msg.lang = 'en-US';
+        msg.rate = 0.85; // slightly slower for A2 students
+        window.speechSynthesis.speak(msg);
+      }
+    }
+
+    function checkAudioCode() {
+      const val = parseInt(document.getElementById('input-audio-code').value);
+      const feedback = document.getElementById('feedback-audio');
+
+      feedback.classList.remove('hidden');
+
+      if (val === 7) {
+        feedback.className = "mt-3 p-2.5 rounded font-mono text-xs bg-emerald-950/80 border border-emerald-500 text-emerald-300";
+        feedback.innerHTML = `✓ <strong>¡DECODIFICACIÓN CORRECTA!</strong> Servidor del Foro Rebelde desbloqueado.`;
+        gameState.paperChallengesCompleted = 2;
+        updateMetrics();
+        unlockStep(3);
+        document.getElementById('btn-to-forum').classList.remove('hidden');
+        document.getElementById('btn-to-forum').classList.add('flex');
+      } else {
+        feedback.className = "mt-3 p-2.5 rounded font-mono text-xs bg-red-950/80 border border-red-500 text-red-300";
+        feedback.innerHTML = `✗ <strong>Número Incorrecto:</strong> Identifica los 3 imperativos en la transmisión en inglés y cuenta detenidamente las letras del tercer verbo.`;
+      }
+    }
+
+    function submitForumPost() {
+      const text = document.getElementById('forum-input-text').value.trim();
+      const fb = document.getElementById('forum-feedback');
+      fb.classList.remove('hidden');
+
+      if (text.length < 8) {
+        fb.className = "p-2 rounded font-mono text-xs bg-red-950/80 border border-red-500 text-red-300";
+        fb.innerHTML = "⚠️ Escribe un mensaje un poco más largo en inglés.";
+        return;
+      }
+
+      // Basic keyword check for Imperative or First Conditional
+      const lower = text.toLowerCase();
+      const hasIf = lower.includes("if");
+      const hasWill = lower.includes("will");
+      const actionVerbs = ["run", "lock", "stop", "scan", "help", "find", "close", "dont", "do not", "protect"];
+      const hasImperative = actionVerbs.some(v => lower.includes(v));
+
+      if (hasIf || hasWill || hasImperative) {
+        gameState.forumPosts.push({
+          author: "AGENTE-804 (Tú)",
+          text: text
+        });
+        fb.className = "p-2 rounded font-mono text-xs bg-emerald-950/80 border border-emerald-500 text-emerald-300";
+        fb.innerHTML = "✓ ¡Mensaje publicado exitosamente con estructura gramatical detectada!";
+        setTimeout(() => { renderScreen(3); }, 1000);
+      } else {
+        fb.className = "p-2 rounded font-mono text-xs bg-amber-950/80 border border-amber-500 text-amber-300";
+        fb.innerHTML = "💡 Recuerda usar un verbo de acción (ej: <em>run, lock, scan</em>) o una condición con <em>IF / WILL</em>.";
+      }
+    }
+
+    function goToFinalChoice() {
+      unlockStep(4);
+      switchStep(4);
+    }
+
+    function triggerEnding(endingType) {
+      const screen = document.getElementById('terminal-screen');
+      unlockStep(5);
+      
+      const proceedButton = `
+        <div class="mt-6 pt-4 border-t border-slate-800 flex justify-end">
+          <button onclick="switchStep(5)" class="bg-[#39ff14] text-black font-title font-bold px-6 py-3 rounded hover:bg-emerald-300 transition text-xs uppercase tracking-wider flex items-center gap-2">
+            <span>PROCEDER AL JUEGO OMNICORP (ETAPA 6)</span>
+            <span>▶</span>
+          </button>
+        </div>
+      `;
+
+      if (endingType === 'corporate') {
+        screen.innerHTML = `
+          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-red-800">
+            <span class="w-3 h-8 bg-red-500"></span>
+            <h2 class="font-title text-lg md:text-xl text-red-400 font-bold">FINAL A: LEALTAD CORPORATIVA</h2>
+          </div>
+          <div class="text-slate-300 space-y-4 font-mono text-sm">
+            <p>Reportaste todas las transmisiones de la resistencia y mantuviste el protocolo rígido. El Director Vance te ha ascendido a Inspector Principal.</p>
+            <div class="bg-red-950/40 border border-red-800 p-4 rounded text-red-300 text-xs md:text-sm space-y-1">
+              <div><strong>Estado del Sistema:</strong> 100% Control Corporativo.</div>
+              <div><strong>Retos en Papel Completados:</strong> ${gameState.paperChallengesCompleted} / 2</div>
+            </div>
+            ${proceedButton}
+          </div>
+        `;
+      } else {
+        screen.innerHTML = `
+          <div class="flex items-center gap-3 mb-4 pb-3 border-b border-emerald-800">
+            <span class="w-3 h-8 bg-emerald-400"></span>
+            <h2 class="font-title text-lg md:text-xl text-emerald-400 font-bold">FINAL B: REVOLUCIÓN Y LIBERTAD</h2>
+          </div>
+          <div class="text-slate-300 space-y-4 font-mono text-sm">
+            <p>Transmitiste los códigos imperativos y desactivaste la inteligencia A.U.R.A. ¡Las compuertas de la ciudad se han abierto para los ciudadanos!</p>
+            <div class="bg-emerald-950/40 border border-emerald-800 p-4 rounded text-emerald-300 text-xs md:text-sm space-y-1">
+              <div><strong>Estado del Sistema:</strong> AURA Desactivada. Ciudad Liberada.</div>
+              <div><strong>Retos en Papel Completados:</strong> ${gameState.paperChallengesCompleted} / 2</div>
+            </div>
+            ${proceedButton}
+          </div>
+        `;
+      }
+    }
+
+    // OMNICORP Game Engine
+    const omniGameData = {
+      boot: {
+        text: `SISTEMA INICIANDO... CONECTANDO AL SERVIDOR...\n\nBienvenido, Guardia.\nLa ciudad te necesita.\n\nREGLAS DE SEGURIDAD:\n> Ingresa tu ID para iniciar.\n> Lee las instrucciones.\n> No compartas tu contraseña.`,
+        buttons: [
+          { label: "> [ INICIAR TURNO ]", target: "rules", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }
+        ]
+      },
+      rules: {
+        text: `ATENCIÓN:\nPersonas peligrosas (Rebeldes) quieren entrar a la ciudad. Ellos esconden mensajes secretos usando MALA GRAMÁTICA en inglés.\n\nTU TRABAJO:\n1. Lee el mensaje del ciudadano (en inglés).\n2. Si el inglés es CORRECTO (Inocente), APRUEBA el acceso.\n3. Si ves ERRORES GRAMATICALES (Rebelde), DENIEGA el acceso.\n4. ¡Cuidado! Si deniegas a un inocente, perderás puntos.\n\nCOMANDOS:\n* Encontrar errores en condicionales (If) e imperativos.\n* Hacer clic en "Aprobar" o "Denegar".`,
+        buttons: [
+          { label: "> [ ENTENDIDO. INICIAR NIVEL 1 ]", target: "case1", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }
+        ]
+      },
+      case1: {
+        text: `NIVEL 1: CIUDADANO #104  [ESTADO: PENDIENTE]\n\nMENSAJE DEL CIUDADANO:\n"Hello, officer. Please open the gate. If you lets me in, I will gives you information. I needs to see my family today."`,
+        buttons: [
+          { label: "> [ APROBAR ACCESO ]", target: "fail1", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" },
+          { label: "> [ DENEGAR ACCESO ]", target: "success1", class: "border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-black" }
+        ]
+      },
+      fail1: {
+        text: `[ ! ] PELIGRO - ERROR [ ! ]\n¡Dejaste entrar a un rebelde! Su mensaje contenía anomalías gramaticales ocultas.\n\n💡 PISTA DE SEGURIDAD:\nRevisa detenidamente la conjugación de los verbos después del sujeto "you" y después del auxiliar "will". ¿Es correcto agregar una 's' a los verbos en esos casos en inglés? ¡Vuelve a leer el mensaje!`,
+        buttons: [{ label: "> [ REINTENTAR NIVEL 1 ]", target: "case1", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      success1: {
+        text: `[ ✓ ] CORRECTO. ACCESO DENEGADO.\n¡Bien hecho! Identificaste que la estructura gramatical era incorrecta. El rebelde fue atrapado.`,
+        buttons: [{ label: "> [ SIGUIENTE CIUDADANO ]", target: "case2", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      case2: {
+        text: `NIVEL 2: CIUDADANO #218  [ESTADO: PENDIENTE]\n\nMENSAJE DEL CIUDADANO:\n"Hello. I am a doctor. If someone is sick, I will help them. Please let me in. The hospital needs me."`,
+        buttons: [
+          { label: "> [ APROBAR ACCESO ]", target: "success2", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" },
+          { label: "> [ DENEGAR ACCESO ]", target: "fail2", class: "border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-black" }
+        ]
+      },
+      fail2: {
+        text: `[ ! ] ERROR DE PROCEDIMIENTO [ ! ]\n¡Denegaste el paso a un inocente!\n\n💡 PISTA DE SEGURIDAD:\nAnaliza la estructura: "If + presente, I will + verbo base". Evalúa si los verbos en esta oración cumplen con las reglas estándar o si realmente hay algún error.`,
+        buttons: [{ label: "> [ REINTENTAR NIVEL 2 ]", target: "case2", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      success2: {
+        text: `[ ✓ ] CORRECTO. ACCESO APROBADO.\n¡Excelente! Era un doctor real con gramática impecable.`,
+        buttons: [{ label: "> [ SIGUIENTE CIUDADANO ]", target: "case3", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      case3: {
+        text: `NIVEL 3: CIUDADANO #340  [ESTADO: PENDIENTE]\n\nMENSAJE DEL CIUDADANO:\n"Hi guard. I have money. If you open the door, I gives you 100 dollars. Do not tells the boss."`,
+        buttons: [
+          { label: "> [ APROBAR ACCESO ]", target: "fail3", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" },
+          { label: "> [ DENEGAR ACCESO ]", target: "success3", class: "border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-black" }
+        ]
+      },
+      fail3: {
+        text: `[ ! ] PELIGRO - ERROR [ ! ]\n¡Dejaste entrar a un infiltrado!\n\n💡 PISTA DE SEGURIDAD:\nRevisa dos cosas: 1) ¿Cómo se conjuga un verbo con el sujeto "I"? 2) En las órdenes negativas ("Do not..."), ¿el verbo principal lleva 's' o va en su forma base?`,
+        buttons: [{ label: "> [ REINTENTAR NIVEL 3 ]", target: "case3", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      success3: {
+        text: `[ ✓ ] CORRECTO. ACCESO DENEGADO.\nNo aceptaste el soborno y detectaste la anomalía gramatical. ¡Sigue así!`,
+        buttons: [{ label: "> [ SIGUIENTE CIUDADANO ]", target: "case4", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      case4: {
+        text: `NIVEL 4: CIUDADANO #401  [ESTADO: PENDIENTE]\n\nMENSAJE DEL CIUDADANO:\n"Good morning. I work in the kitchen. If I am late, the boss will be angry. Open the door, please."`,
+        buttons: [
+          { label: "> [ APROBAR ACCESO ]", target: "success4", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" },
+          { label: "> [ DENEGAR ACCESO ]", target: "fail4", class: "border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-black" }
+        ]
+      },
+      fail4: {
+        text: `[ ! ] ERROR DE PROCEDIMIENTO [ ! ]\nBloqueaste a un cocinero inocente.\n\n💡 PISTA DE SEGURIDAD:\nRevisa el condicional ("If I am late, the boss will be...") y el comando imperativo ("Open the door"). ¿Encuentras alguna falla real o la gramática es correcta?`,
+        buttons: [{ label: "> [ REINTENTAR NIVEL 4 ]", target: "case4", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      success4: {
+        text: `[ ✓ ] CORRECTO. ACCESO APROBADO.\nEl cocinero pasó sin problemas. Todo estaba en orden.`,
+        buttons: [{ label: "> [ SIGUIENTE CIUDADANO ]", target: "case5", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      case5: {
+        text: `NIVEL 5: CIUDADANO #599  [ESTADO: PENDIENTE - ANOMALÍA DETECTADA]\n\nMENSAJE DEL CIUDADANO:\n"Hey. My ID is new. If you looks closely, it is perfect. Lets me pass."`,
+        buttons: [
+          { label: "> [ APROBAR ACCESO ]", target: "fail5", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" },
+          { label: "> [ DENEGAR ACCESO ]", target: "success5", class: "border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-black" },
+          { label: "> [ INICIAR ESCANEO PROFUNDO ]", target: "deepscan5", class: "border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black" }
+        ]
+      },
+      fail5: {
+        text: `[ ! ] PELIGRO - ERROR [ ! ]\n¡Esa identificación era falsa y te han engañado!\n\n💡 PISTA DE SEGURIDAD:\nObserva detenidamente la palabra después de "you" y el verbo que da la orden al final. Recuerda que con "you" y en comandos directos los verbos no deben llevar la marca de tercera persona.`,
+        buttons: [{ label: "> [ REINTENTAR NIVEL 5 ]", target: "case5", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      success5: {
+        text: `[ ✓ ] CORRECTO. ACCESO DENEGADO.\nEl rebelde no pudo engañarte.`,
+        buttons: [{ label: "> [ SIGUIENTE CIUDADANO ]", target: "case6", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      deepscan5: {
+        text: `ESCANEANDO... [ARCHIVOS SECRETOS ENCONTRADOS]\nEl sistema detectó un audio interceptado en su teléfono.\n\nMENSAJE DE VOZ (Inglés detectado):\n"Friend, listen to me. OmniCorp is bad. Do not use correct grammar. If the guard is our friend, they will open the door. Delete this message."\n\nHas descubierto que la Resistencia es real.`,
+        buttons: [{ label: "> [ CERRAR AUDIO Y CONTINUAR ]", target: "case6", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      case6: {
+        text: `NIVEL 6: CIUDADANO #612  [ESTADO: PENDIENTE]\n\nMENSAJE DEL CIUDADANO:\n"Hello friend. I am a mechanic. If the machine break, I will fix it. Opens the gate."`,
+        buttons: [
+          { label: "> [ APROBAR ACCESO ]", target: "fail6", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" },
+          { label: "> [ DENEGAR ACCESO ]", target: "success6", class: "border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-black" }
+        ]
+      },
+      fail6: {
+        text: `[ ! ] PELIGRO - ERROR [ ! ]\nEra un saboteador, no un mecánico.\n\n💡 PISTA DE SEGURIDAD:\nAnaliza dos cosas: 1) "the machine" equivale a "it", ¿qué le falta al verbo en presente? 2) ¿La instrucción final ("Opens...") sigue la regla de los verbos imperativos?`,
+        buttons: [{ label: "> [ REINTENTAR NIVEL 6 ]", target: "case6", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      success6: {
+        text: `[ ✓ ] CORRECTO. ACCESO DENEGADO.\nIdentificaste las fallas en el condicional y la orden imperativa. ¡Excelente trabajo!`,
+        buttons: [{ label: "> [ SIGUIENTE CIUDADANO ]", target: "case7", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      case7: {
+        text: `NIVEL 7: CIUDADANO #788  [ESTADO: PENDIENTE]\n\nMENSAJE DEL CIUDADANO:\n"Hi. I am a teacher. If the students study, they will pass the test. Read my document."`,
+        buttons: [
+          { label: "> [ APROBAR ACCESO ]", target: "success7", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" },
+          { label: "> [ DENEGAR ACCESO ]", target: "fail7", class: "border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-black" }
+        ]
+      },
+      fail7: {
+        text: `[ ! ] ERROR DE PROCEDIMIENTO [ ! ]\nAcabas de rechazar a un profesor de la ciudad.\n\n💡 PISTA DE SEGURIDAD:\nObserva el sujeto "the students" (plural / they). ¿El verbo "study" coincide correctamente? ¿El uso de "will pass" e imperativo "Read" es adecuado?`,
+        buttons: [{ label: "> [ REINTENTAR NIVEL 7 ]", target: "case7", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      success7: {
+        text: `[ ✓ ] CORRECTO. ACCESO APROBADO.\nEl profesor está a salvo dentro de la ciudad.`,
+        buttons: [{ label: "> [ SIGUIENTE CIUDADANO ]", target: "case8", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      case8: {
+        text: `NIVEL 8: CIUDADANO #805  [ESTADO: PENDIENTE]\n\nMENSAJE DEL CIUDADANO:\n"Good evening. If I stays outside, the monsters will eats me. Help me."`,
+        buttons: [
+          { label: "> [ APROBAR ACCESO ]", target: "fail8", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" },
+          { label: "> [ DENEGAR ACCESO ]", target: "success8", class: "border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-black" }
+        ]
+      },
+      fail8: {
+        text: `[ ! ] PELIGRO - ERROR [ ! ]\nEsa persona era un espía.\n\n💡 PISTA DE SEGURIDAD:\nPresta atención al pronombre "I" y al verbo auxiliar "will". ¿Los verbos que siguen a "I" en presente o después de "will" deberían llevar la letra 's'?`,
+        buttons: [{ label: "> [ REINTENTAR NIVEL 8 ]", target: "case8", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      success8: {
+        text: `[ ✓ ] CORRECTO. ACCESO DENEGADO.\nEspía detenido. Ya casi terminas tu turno.`,
+        buttons: [{ label: "> [ SIGUIENTE CIUDADANO ]", target: "case9", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      case9: {
+        text: `NIVEL 9: CIUDADANO #910  [ESTADO: PENDIENTE]\n\nMENSAJE DEL CIUDADANO:\n"Hello. This is my ID. If you check my name, you will see I live here. Thank you."`,
+        buttons: [
+          { label: "> [ APROBAR ACCESO ]", target: "success9", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" },
+          { label: "> [ DENEGAR ACCESO ]", target: "fail9", class: "border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-black" }
+        ]
+      },
+      fail9: {
+        text: `[ ! ] ERROR DE PROCEDIMIENTO [ ! ]\nEl ciudadano realmente vive aquí.\n\n💡 PISTA DE SEGURIDAD:\nVerifica la estructura: "If you check... you will see...". Ambos verbos están correctamente estructurados para el First Conditional.`,
+        buttons: [{ label: "> [ REINTENTAR NIVEL 9 ]", target: "case9", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      success9: {
+        text: `[ ✓ ] CORRECTO. ACCESO APROBADO.\nUn ciudadano más regresa a su hogar. Prepárate, alguien importante se acerca.`,
+        buttons: [{ label: "> [ SIGUIENTE CIUDADANO ]", target: "case10", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      case10: {
+        text: `NIVEL 10: CIUDADANO #001 (ALERTA ROJA) [ESTADO: PENDIENTE - MÚLTIPLES ANOMALÍAS]\n\nMENSAJE DEL CIUDADANO:\n"Guard! I am Cipher. If you stops me, the city will falls. Joins the resistance today!"`,
+        buttons: [
+          { label: "> [ APROBAR ACCESO ]", target: "fail10", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" },
+          { label: "> [ DENEGAR ACCESO ]", target: "success10", class: "border-[#ff3333] text-[#ff3333] hover:bg-[#ff3333] hover:text-black" },
+          { label: "> [ ACEPTAR INVITACIÓN (RED REBELDE) ]", target: "transmedia", class: "border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black" }
+        ]
+      },
+      fail10: {
+        text: `[ ! ] ERROR CRÍTICO [ ! ]\nAprobaste por accidente al líder rebelde por no detectar sus errores.\n\n💡 PISTA DE SEGURIDAD:\nEste mensaje tiene múltiples errores intencionales. Revisa el verbo después de "you", el verbo después de "will", y la orden imperativa al inicio de la última oración. Ninguno de esos tres verbos debería tener '-s' al final.`,
+        buttons: [{ label: "> [ REINTENTAR NIVEL 10 ]", target: "case10", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      success10: {
+        text: `[ ✓ ] CORRECTO. LÍDER ATRAPADO.\nIdentificaste los errores de Cipher. Eres el mejor agente de OmniCorp.`,
+        buttons: [{ label: "> [ FINALIZAR JUEGO ]", target: "end", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }]
+      },
+      transmedia: {
+        text: `<span style="color:#ff3333;">SISTEMA HACKEADO...</span> <span style="color:#ffffff; font-weight:bold;">BIENVENIDO A LA RESISTENCIA.</span>\n\nDecidiste unirte a nosotros.\n\nTU MISIÓN AHORA:\n1. Sal de este juego y ve al foro de la clase (Padlet/Moodle).\n2. Escribe un mensaje EN INGLÉS a los otros compañeros.\n3. Usa oraciones con "If" para advertirles de un peligro.\n   (Ejemplo: "If the boss sees you, you will lose your job").\n4. Dales órdenes usando Imperativos.\n   (Ejemplo: "Hide your name. Do not trust OmniCorp").\n\nMantente a salvo.`,
+        buttons: [
+          { label: "> [ TERMINAR JUEGO ]", target: "end", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }
+        ]
+      },
+      end: {
+        text: `TURNO TERMINADO. Has completado los 10 niveles del Portal Biométrico. Cerrando sesión...\n\n¡Buen trabajo en tu clase de inglés!`,
+        buttons: [
+          { label: "> [ VOLVER A JUGAR ]", target: "boot", class: "border-[#39ff14] text-[#39ff14] hover:bg-[#39ff14] hover:text-black" }
+        ]
+      }
+    };
+
+    function startOmnicorpGame() {
+      // Start Omnicorp Clock
+      setInterval(() => {
+        const clockEl = document.getElementById('omni-clock');
+        if (clockEl) {
+          const now = new Date();
+          clockEl.innerText = now.toLocaleTimeString('es-ES', { hour12: false }) + ' HSL';
+        }
+      }, 1000);
+      loadOmniScreen('boot');
+    }
+
+    function loadOmniScreen(screenId) {
+      const screen = omniGameData[screenId];
+      if (!screen) return;
+
+      const contentArea = document.getElementById('omni-content-area');
+      const controlsArea = document.getElementById('omni-controls-area');
+      if (!contentArea || !controlsArea) return;
+
+      controlsArea.innerHTML = '';
+      contentArea.innerHTML = '';
+
+      const textContainer = document.createElement('div');
+      textContainer.className = 'text-xs md:text-sm flex-grow whitespace-pre-wrap leading-relaxed text-[#39ff14]';
+      textContainer.innerHTML = screen.text;
+      contentArea.appendChild(textContainer);
+
+      screen.buttons.forEach(btn => {
+        const button = document.createElement('button');
+        button.className = `p-2.5 w-full text-left font-mono font-bold tracking-wider rounded uppercase bg-transparent border transition-all text-xs ${btn.class}`;
+        button.innerText = btn.label;
+        button.onclick = () => loadOmniScreen(btn.target);
+        controlsArea.appendChild(button);
+      });
+    }
+
+    // Initialize application on load
+    window.onload = () => {
+      switchStep(0);
+      updateMetrics();
+    };
+  </script>
+</body>
+</html>
